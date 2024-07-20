@@ -21,4 +21,6 @@ Route::prefix('v1')->group(function () {
     });
 
     Route::apiResource('/users', UserController::class);
+
+    Route::patch('/users/deactivate', [UserController::class,'deactivate']);
 });

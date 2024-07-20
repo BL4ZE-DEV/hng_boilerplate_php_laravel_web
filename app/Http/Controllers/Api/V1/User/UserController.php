@@ -3,8 +3,10 @@
 namespace App\Http\Controllers\Api\V1\User;
 
 use App\Http\Controllers\Controller;
+use App\Mail\DeactivationMail;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
 
 class UserController extends Controller
 {
@@ -49,4 +51,38 @@ class UserController extends Controller
     {
         //
     }
+
+    public function deactivate(Request $request)
+    {
+        $user = $request->user();
+
+        if (!$request->confirmation) {
+            return response()->json([
+                "message" => "Confirmation needs to be true for deactivation to proceed"
+            ]);
+        }
+
+        if ($user->is_active == 1) {
+            $user->is_active = 0;
+            $user->save();
+
+            try {
+                Mail::to($user->email)->send(new DeactivationMail($user->name));
+            } catch (\Exception $e) {
+                return response()->json([
+                    'message' => 'Error: Mail not sent successfully',
+                    'error' => $e->getMessage()
+                ], 500);
+            }
+
+            return response()->json([
+                'message' => 'Account deactivated and email sent successfully'
+            ],200);
+        }
+
+        return response()->json([
+            'message' => 'User is already deactivated'
+        ], 400);
+    }
+
 }
